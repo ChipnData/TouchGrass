@@ -65,11 +65,10 @@ struct SessionEnded {
 pub fn launch(app: &AppHandle, id: String, launch: Launch, track: bool) -> Result<(), String> {
     match launch {
         Launch::Uri { uri } => {
-            let allowed = ["steam://", "com.epicgames.launcher://", "battlenet://", r"shell:AppsFolder\"];
-            if !allowed.iter().any(|p| uri.starts_with(p)) {
-                return Err("Unsupported launch link".into());
+            if uri.starts_with("https://") {
+                return open_link(&uri);
             }
-            shell_open(&uri)
+            open_uri(&uri)
         }
         Launch::BnetExec { exe, code } => {
             if Path::new(&exe).exists() {
@@ -139,10 +138,30 @@ pub fn open_folder(path: &str) -> Result<(), String> {
     }
 }
 
+/// Store and app links that are safe to hand to the shell.
+pub const ALLOWED_URIS: &[&str] = &[
+    "steam://",
+    "com.epicgames.launcher://",
+    "battlenet://",
+    "uplay://",
+    "amazon-games://",
+    "ms-windows-store://",
+    "ms-settings:",
+    r"shell:AppsFolder\",
+];
+
+/// Opens a store/app link (steam://, uplay://, shell:AppsFolder\..., etc.).
+pub fn open_uri(uri: &str) -> Result<(), String> {
+    if !ALLOWED_URIS.iter().any(|p| uri.starts_with(p)) || uri.contains('"') {
+        return Err("Unsupported link".into());
+    }
+    shell_open(uri)
+}
+
 /// Opens an https link in the default browser.
 pub fn open_link(url: &str) -> Result<(), String> {
-    if !url.starts_with("https://") {
-        return Err("Only https links can be opened".into());
+    if !(url.starts_with("https://") || url.starts_with("http://")) || url.contains('"') {
+        return Err("Only web links can be opened".into());
     }
     shell_open(url)
 }

@@ -29,48 +29,46 @@ pub fn code_for(name: &str) -> Option<&'static str> {
     CODES.iter().find(|(k, _)| n.contains(k)).map(|(_, c)| *c)
 }
 
-#[cfg(not(windows))]
-pub fn scan() -> Result<Option<Vec<Game>>, String> {
-    Ok(None)
-}
-
+/// Path to Battle.net.exe, if installed.
 #[cfg(windows)]
-pub fn scan() -> Result<Option<Vec<Game>>, String> {
-    use super::reg;
-    use std::collections::HashSet;
+pub fn client_exe() -> Option<String> {
     use std::path::Path;
-
-    let hklm = reg::hklm();
-    let mut bnet_dir: Option<String> = None;
-    let mut found: Vec<(String, String)> = Vec::new();
-    for root in [
-        r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
-        r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
-    ] {
-        let Ok(k) = hklm.open_subkey(root) else { continue };
-        for name in k.enum_keys().flatten() {
-            let Ok(sub) = k.open_subkey(&name) else { continue };
-            let dn: String = sub.get_value("DisplayName").unwrap_or_default();
-            let us: String = sub.get_value("UninstallString").unwrap_or_default();
-            let loc: String = sub.get_value("InstallLocation").unwrap_or_default();
-            if dn == "Battle.net" {
-                bnet_dir = Some(loc);
-                continue;
-            }
-            if !dn.is_empty() && (us.contains("Battle.net") || us.contains("Blizzard Uninstaller")) {
-                found.push((dn, loc));
-            }
-        }
-    }
-
-    let exe = bnet_dir
-        .map(|d| Path::new(&d).join("Battle.net.exe"))
+    super::reg::uninstall_entries()
+        .into_iter()
+        .find(|u| u.name == "Battle.net")
+        .map(|u| Path::new(&u.location).join("Battle.net.exe"))
         .filter(|p| p.exists())
         .or_else(|| {
             let p = Path::new(r"C:\Program Files (x86)\Battle.net\Battle.net.exe");
             p.exists().then(|| p.to_path_buf())
         })
-        .map(|p| p.to_string_lossy().into_owned());
+        .map(|p| p.to_string_lossy().into_owned())
+}
+
+#[cfg(not(windows))]
+pub fn client_exe() -> Option<String> {
+    None
+}
+
+#[cfg(not(windows))]
+pub fn scan() -> super::Found {
+    Ok(None)
+}
+
+#[cfg(windows)]
+pub fn scan() -> super::Found {
+    use std::collections::HashSet;
+
+    let exe = client_exe();
+    let found: Vec<(String, String)> = super::reg::uninstall_entries()
+        .into_iter()
+        .filter(|u| {
+            !u.name.is_empty()
+                && u.name != "Battle.net"
+                && (u.uninstall.contains("Battle.net") || u.uninstall.contains("Blizzard Uninstaller"))
+        })
+        .map(|u| (u.name, u.location))
+        .collect();
 
     if exe.is_none() && found.is_empty() {
         return Ok(None);
@@ -89,19 +87,8 @@ pub fn scan() -> Result<Option<Vec<Game>>, String> {
                 (None, Some(e)) => Launch::Exe { path: e.clone(), args: String::new(), cwd: None },
                 (None, None) => Launch::Uri { uri: "battlenet://".into() },
             };
-            Game {
-                id: format!("bnet:{}", code.map(str::to_string).unwrap_or_else(|| title.to_lowercase())),
-                source: "Battle.net".into(),
-                title,
-                installed: true,
-                launch,
-                install_dir: (!loc.is_empty()).then_some(loc),
-                cover: None,
-                playtime_min: None,
-                last_played: None,
-                store_url: None,
-                size_bytes: None,
-            }
+            let id = format!("bnet:{}", code.map(str::to_string).unwrap_or_else(|| title.to_lowercase()));
+            Game::basic(id, "Battle.net", title, launch, (!loc.is_empty()).then_some(loc))
         })
         .collect();
     Ok(Some(games))

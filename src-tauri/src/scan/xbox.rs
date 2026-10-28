@@ -37,29 +37,15 @@ ConvertTo-Json -InputObject @($out) -Compress
 "#;
 
 #[cfg(not(windows))]
-pub fn scan() -> Result<Option<Vec<Game>>, String> {
+pub fn scan() -> super::Found {
     Ok(None)
 }
 
 #[cfg(windows)]
-pub fn scan() -> Result<Option<Vec<Game>>, String> {
+pub fn scan() -> super::Found {
     use std::path::Path;
 
-    let out = super::hidden_command("powershell.exe")
-        .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", SCRIPT])
-        .output()
-        .map_err(|e| format!("couldn't run PowerShell: {e}"))?;
-    let text = String::from_utf8_lossy(&out.stdout);
-    let text = text.trim().trim_start_matches('\u{feff}');
-    if text.is_empty() {
-        return Ok(None);
-    }
-    let v: serde_json::Value = serde_json::from_str(text).map_err(|e| format!("unexpected output: {e}"))?;
-    let list = match v {
-        serde_json::Value::Array(a) => a,
-        o @ serde_json::Value::Object(_) => vec![o],
-        _ => vec![],
-    };
+    let list = super::json_list(&super::run_powershell(SCRIPT)?)?;
     if list.is_empty() {
         return Ok(None);
     }
@@ -75,19 +61,15 @@ pub fn scan() -> Result<Option<Vec<Game>>, String> {
                 .map(|l| Path::new(&loc).join(l))
                 .filter(|p| p.exists())
                 .map(|p| p.to_string_lossy().into_owned());
-            Some(Game {
-                id: format!("xbox:{pfn}"),
-                source: "Xbox".into(),
-                title: name,
-                installed: true,
-                launch: Launch::Uri { uri: format!(r"shell:AppsFolder\{aumid}") },
-                install_dir: (!loc.is_empty()).then_some(loc),
-                cover,
-                playtime_min: None,
-                last_played: None,
-                store_url: None,
-                size_bytes: None,
-            })
+            let mut game = Game::basic(
+                format!("xbox:{pfn}"),
+                "Xbox",
+                name,
+                Launch::Uri { uri: format!(r"shell:AppsFolder\{aumid}") },
+                (!loc.is_empty()).then_some(loc),
+            );
+            game.cover = cover;
+            Some(game)
         })
         .collect();
     Ok(Some(games))

@@ -1,9 +1,10 @@
 {
-  "name": "lumen",
+  "name": "touch-grass",
   "private": true,
-  "version": "0.1.0",
-  "description": "Lightweight unified game launcher for Steam, Epic, Battle.net, Xbox and custom games",
+  "version": "0.2.0",
+  "description": "Touch Grass: a lightweight unified game launcher for Steam, Epic, GOG, Battle.net, Xbox, EA, Ubisoft, Amazon, Humble and custom games",
   "scripts": {
+    "tauri": "tauri",
     "dev": "tauri dev",
     "build": "tauri build"
   },
