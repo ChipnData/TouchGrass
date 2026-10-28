@@ -1,0 +1,49 @@
+name: Publish release (enables auto-updates)
+
+# Builds a signed installer and publishes it as a GitHub Release, including the
+# latest.json file that Touch Grass checks for updates.
+# Needs two repository secrets: TAURI_SIGNING_PRIVATE_KEY and
+# TAURI_SIGNING_PRIVATE_KEY_PASSWORD. The release tag comes from the version
+# in src-tauri/tauri.conf.json, so bump that first.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        working-directory: src-tauri
+        run: cargo test
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: v__VERSION__
+          releaseName: Touch Grass v__VERSION__
+          releaseBody: Download the setup .exe below. Existing installs update themselves.
+          releaseDraft: false
+          prerelease: false
+          args: --config src-tauri/tauri.release.conf.json
