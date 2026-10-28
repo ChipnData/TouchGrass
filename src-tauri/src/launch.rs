@@ -36,21 +36,41 @@ pub fn split_args(s: &str) -> Vec<String> {
     out
 }
 
-/// Hands a URI or path to the OS shell (Explorer on Windows).
+/// Opens a link, URI or file the way Windows does when you double-click it
+/// (ShellExecute). Unlike passing it to explorer.exe, this keeps query
+/// strings like `?dealID=...` intact.
+#[cfg(windows)]
 pub fn shell_open(target: &str) -> Result<(), String> {
-    #[cfg(windows)]
-    let mut cmd = {
-        let mut c = Command::new("explorer.exe");
-        c.arg(target);
-        c
-    };
-    #[cfg(not(windows))]
-    let mut cmd = {
-        let mut c = Command::new("xdg-open");
-        c.arg(target);
-        c
-    };
-    cmd.spawn().map(|_| ()).map_err(|e| e.to_string())
+    use windows_sys::Win32::System::Com::{CoInitializeEx, COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE};
+    use windows_sys::Win32::UI::Shell::ShellExecuteW;
+    use windows_sys::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+
+    let wide = |s: &str| s.encode_utf16().chain(std::iter::once(0)).collect::<Vec<u16>>();
+    let verb = wide("open");
+    let file = wide(target);
+    let code = unsafe {
+        // Some link handlers need COM; harmless if this thread already has it.
+        CoInitializeEx(std::ptr::null(), (COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE) as u32);
+        ShellExecuteW(
+            std::ptr::null_mut(),
+            verb.as_ptr(),
+            file.as_ptr(),
+            std::ptr::null(),
+            std::ptr::null(),
+            SW_SHOWNORMAL,
+        )
+    } as isize;
+    // ShellExecute returns a value greater than 32 on success.
+    if code > 32 {
+        Ok(())
+    } else {
+        Err(format!("Windows couldn't open that (code {code}). The app that handles it may not be installed."))
+    }
+}
+
+#[cfg(not(windows))]
+pub fn shell_open(target: &str) -> Result<(), String> {
+    Command::new("xdg-open").arg(target).spawn().map(|_| ()).map_err(|e| e.to_string())
 }
 
 #[derive(Clone, serde::Serialize)]
