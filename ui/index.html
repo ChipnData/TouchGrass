@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lumen</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <nav class="rail" aria-label="Main">
+    <div class="logo" aria-hidden="true">L</div>
+    <button class="rail-btn active" data-view="library" aria-label="Library" title="Library">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    </button>
+    <button class="rail-btn" data-view="stores" aria-label="Stores" title="Stores">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 9h16l-1.5 11h-13z"/><path d="M8 9V7a4 4 0 0 1 8 0v2"/></svg>
+    </button>
+    <button class="rail-btn" id="rail-add" aria-label="Add a game (Ctrl+N)" title="Add a game (Ctrl+N)">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+    <div class="spacer"></div>
+    <button class="rail-btn" data-view="settings" aria-label="Settings" title="Settings (Ctrl+,)">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 14.3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9.7 3.6V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
+    </button>
+  </nav>
+
+  <main>
+    <!-- LIBRARY -->
+    <section id="view-library" class="view">
+      <header class="toolbar">
+        <h1>Library</h1>
+        <span class="muted" id="count"></span>
+        <span class="scan-state muted" id="scan-state" aria-live="polite"></span>
+        <div class="spacer"></div>
+        <label class="search">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <span class="sr">Search games</span>
+          <input id="search" type="search" placeholder="Search   Ctrl+K" autocomplete="off" spellcheck="false">
+        </label>
+        <label class="select">
+          <span class="sr">Sort</span>
+          <select id="sort">
+            <option value="recent">Recently played</option>
+            <option value="az">A–Z</option>
+            <option value="playtime">Most played</option>
+            <option value="source">By store</option>
+          </select>
+        </label>
+        <button class="icon-btn" id="installed-only" aria-pressed="false" title="Installed only">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+          <span class="sr">Installed only</span>
+        </button>
+        <button class="icon-btn" id="surprise" title="Surprise me — pick a random installed game">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" class="dot"/><circle cx="15.5" cy="15.5" r="1.2" class="dot"/><circle cx="15.5" cy="8.5" r="1.2" class="dot"/><circle cx="8.5" cy="15.5" r="1.2" class="dot"/></svg>
+          <span class="sr">Surprise me</span>
+        </button>
+        <button class="icon-btn" id="rescan" title="Rescan libraries (F5)">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7L20 8"/><path d="M20 3v5h-5"/></svg>
+          <span class="sr">Rescan libraries</span>
+        </button>
+      </header>
+
+      <div class="chips" id="chips" role="group" aria-label="Filter by store"></div>
+
+      <section class="hero" id="hero" hidden aria-label="Continue playing">
+        <div class="hero-cover" id="hero-cover"></div>
+        <div class="hero-info">
+          <span class="eyebrow">Continue playing</span>
+          <h2 id="hero-title"></h2>
+          <div class="hero-meta" id="hero-meta"></div>
+        </div>
+        <div class="hero-actions">
+          <button class="btn primary" id="hero-play">
+            <svg aria-hidden="true" viewBox="0 0 24 24" class="fill"><path d="M7 4v16l13-8z"/></svg>Play
+          </button>
+          <button class="icon-btn big" id="hero-more" aria-label="More options">⋯</button>
+        </div>
+      </section>
+
+      <section id="pinned-wrap" hidden aria-label="Pinned">
+        <h2 class="section-title">Pinned</h2>
+        <div class="grid" id="pinned"></div>
+      </section>
+      <section aria-label="All games">
+        <h2 class="section-title" id="all-title" hidden>All games</h2>
+        <div class="grid" id="grid"></div>
+      </section>
+      <div class="empty" id="empty" hidden></div>
+    </section>
+
+    <!-- STORES -->
+    <section id="view-stores" class="view" hidden>
+      <header class="toolbar"><h1>Stores</h1></header>
+      <p class="muted lead">Stores open in Lumen's store window, and your sign-ins are remembered. Installing and updating games still happens in each store's own app.</p>
+      <div class="store-grid" id="stores"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="view-settings" class="view" hidden>
+      <header class="toolbar"><h1>Settings</h1></header>
+      <div class="settings">
+        <fieldset>
+          <legend>Startup &amp; window</legend>
+          <label class="row"><span><b>Start with Windows</b><small>Lumen launches when you sign in to Windows.</small></span><input type="checkbox" role="switch" id="s-autostart"></label>
+          <label class="row"><span><b>Start in the tray</b><small>When started with Windows, stay in the system tray instead of opening the window.</small></span><input type="checkbox" role="switch" data-setting="startMinimized"></label>
+          <label class="row"><span><b>Close button sends Lumen to the tray</b><small>Keeps it ready for quick launching. Quit from the tray icon.</small></span><input type="checkbox" role="switch" data-setting="closeToTray"></label>
+          <label class="row"><span><b>Global hotkey: Ctrl + Shift + Space</b><small>Show or hide Lumen from anywhere, even in other apps.</small></span><input type="checkbox" role="switch" data-setting="hotkey"></label>
+          <label class="row"><span><b>Hide Lumen when a game launches</b><small>Gets out of the way so nothing sits behind your game.</small></span><input type="checkbox" role="switch" data-setting="minimizeOnLaunch"></label>
+        </fieldset>
+        <fieldset>
+          <legend>Library</legend>
+          <label class="row"><span><b>Rescan when Lumen opens</b><small>Picks up newly installed games automatically.</small></span><input type="checkbox" role="switch" data-setting="rescanOnStart"></label>
+          <label class="row"><span><b>Show hidden games</b></span><input type="checkbox" role="switch" data-setting="showHidden"></label>
+          <label class="row"><span><b>Tile size</b></span>
+            <select data-setting="tileSize"><option value="s">Small</option><option value="m">Medium</option><option value="l">Large</option></select>
+          </label>
+          <div class="row"><span><b>Last scan</b><small id="scan-report">Not scanned yet.</small></span><button class="btn" id="s-rescan">Rescan now</button></div>
+        </fieldset>
+        <fieldset>
+          <legend>Accounts &amp; cover art (optional)</legend>
+          <label class="field"><span><b>Steam Web API key</b><small>Adds your <em>uninstalled</em> Steam games. Get a free key at <a href="#" data-link="https://steamcommunity.com/dev/apikey">steamcommunity.com/dev/apikey</a>. Your Steam profile's game details must be public.</small></span>
+            <input type="password" data-setting="steamApiKey" autocomplete="off" spellcheck="false" placeholder="Paste key"></label>
+          <label class="field"><span><b>Steam ID (64-bit)</b><small id="steamid-hint">Detected automatically from the Steam app when possible.</small></span>
+            <input type="text" data-setting="steamId" autocomplete="off" spellcheck="false" inputmode="numeric"></label>
+          <label class="field"><span><b>SteamGridDB API key</b><small>Fetches cover art for Epic, Battle.net, Xbox and custom games. Free key at <a href="#" data-link="https://www.steamgriddb.com/profile/preferences/api">steamgriddb.com</a>.</small></span>
+            <input type="password" data-setting="sgdbKey" autocomplete="off" spellcheck="false" placeholder="Paste key"></label>
+          <div class="row"><span><b>Missing covers</b><small id="cover-report"></small></span><button class="btn" id="s-covers">Find covers</button></div>
+        </fieldset>
+        <fieldset>
+          <legend>Shortcuts</legend>
+          <dl class="keys">
+            <dt>Ctrl+K or just type</dt><dd>Search</dd>
+            <dt>Arrow keys · Enter</dt><dd>Move · Play</dd>
+            <dt>Ctrl+D</dt><dd>Pin / unpin selected</dd>
+            <dt>Menu key or right-click</dt><dd>Game options</dd>
+            <dt>Ctrl+N / drag an .exe in</dt><dd>Add a game</dd>
+            <dt>F5</dt><dd>Rescan</dd>
+            <dt>Controller</dt><dd>D-pad/stick move · A play · B back · X options · Y pin · LB/RB switch store</dd>
+          </dl>
+        </fieldset>
+        <p class="muted small">Lumen 0.1.0 · <button class="linklike" id="s-quit">Quit Lumen</button></p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="ctx" id="ctx" role="menu" hidden></div>
+
+<dialog id="add-dialog" aria-labelledby="add-title">
+  <form method="dialog" id="add-form">
+    <h2 id="add-title">Add a game</h2>
+    <label class="field"><span><b>Program</b><small>An .exe, shortcut (.lnk/.url) or .bat file.</small></span>
+      <span class="pick"><input type="text" id="f-path" required readonly placeholder="Choose a file…"><button type="button" class="btn" id="f-browse">Browse</button></span></label>
+    <label class="field"><span><b>Name</b></span><input type="text" id="f-title" required></label>
+    <label class="field"><span><b>Launch options</b><small>Optional, e.g. <code>-windowed -fps 144</code></small></span><input type="text" id="f-args" spellcheck="false"></label>
+    <label class="field"><span><b>Cover image</b><small>Optional. Leave empty to auto-find (needs a SteamGridDB key) or use a generated tile.</small></span>
+      <span class="pick"><input type="text" id="f-cover" readonly placeholder="None"><button type="button" class="btn" id="f-cover-browse">Browse</button><button type="button" class="btn" id="f-cover-clear">Clear</button></span></label>
+    <div class="dialog-actions">
+      <button type="button" class="btn" id="f-cancel">Cancel</button>
+      <button type="submit" class="btn primary" id="f-save">Add game</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="drop" id="drop" hidden><div>Drop to add to your library</div></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
