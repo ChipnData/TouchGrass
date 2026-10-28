@@ -282,8 +282,8 @@ mod tests {
             root.join("steamapps/libraryfolders.vdf"),
             format!(
                 "\"libraryfolders\"\n{{\n \"0\" {{ \"path\" \"{}\" }}\n \"1\" {{ \"path\" \"{}\" }}\n}}",
-                root.display(),
-                lib2.display()
+            root.display().to_string().replace('\\', "\\\\"),
+            lib2.display().to_string().replace('\\', "\\\\")
             ),
         )
         .unwrap();
